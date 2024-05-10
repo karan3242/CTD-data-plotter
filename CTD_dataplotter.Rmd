@@ -40,7 +40,8 @@ shiny::fluidPage(
     "varSelect",
     "Select variables:",
     choices = var,
-    inline = TRUE
+    inline = TRUE,
+    selected = "FlSP"
   )
 )
 ```
