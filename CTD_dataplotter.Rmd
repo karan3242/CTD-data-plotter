@@ -5,7 +5,7 @@ runtime: shiny
 ---
 
 ```{r setup, echo=FALSE}
-knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
 library(shiny)
 library(ggplot2)
 library(readxl)
@@ -25,7 +25,7 @@ file_names <- tools::file_path_sans_ext(basename(xlsx_files))
 var <- c("Sal00", "Tv290C", "FlSP", "SeaTurbMtr", "Par", "Sbeox0Mm/L", "Sbeox0PS")
 ```
 
-```{r echo=FALSE}
+```{r}
 # Shiny controls for file and variable selection
 # Select files and variables for the plot
 shiny::fluidPage(
@@ -44,8 +44,7 @@ shiny::fluidPage(
 )
 ```
 
-```{r echo=FALSE}
-# Shiny server logic for generating the plot
+```{r}
 shiny::renderPlot({
   # Ensure selections are made
   req(input$fileSelect, input$varSelect)
