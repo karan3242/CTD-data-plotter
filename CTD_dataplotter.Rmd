@@ -77,7 +77,8 @@ shiny::renderPlot({
     ggtitle("Multi-File Variable Plot") +
     xlab("Depth(m)") +
     theme_minimal() +
-    theme(legend.title = element_blank())+
+    theme(legend.title = element_blank(),
+          legend.position = "bottom")+
     scale_color_uchicago()
 }, width = "auto", height = 1080)
 ```
