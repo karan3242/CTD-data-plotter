@@ -23,7 +23,7 @@ xlsx_files <- list.files(path = data_folder, pattern = "\\.xlsx$", full.names = 
 file_names <- tools::file_path_sans_ext(basename(xlsx_files))
 
 # Variable options for the plot
-var <- c("Sal00", "Tv290C", "FlSP", "SeaTurbMtr", "Par", "Sbeox0Mm/L", "Sbeox0PS")
+var <- c("Sal00", "Tv290C", "FlSP", "SeaTurbMtr", "Par", "Sbeox0Mm/L", "Sbeox0PS", "AltM", "Flag")
 ```
 
 ```{r}
@@ -54,7 +54,7 @@ shiny::renderPlot({
   combined_data <- bind_rows(lapply(input$fileSelect, function(file) {
     path <- file.path(data_folder, paste0(file, ".xlsx"))
     read_excel(path) %>%
-      drop_na() %>%
+      drop_na() %>% # removes NA row if any
       mutate(File = file)  # Add a column for the source file
   }))
   
@@ -70,15 +70,17 @@ shiny::renderPlot({
   
   # Create the plot with ggplot, using `FileVariable` for color grouping
   ggplot(long_data, aes(x = DepSM, y = Value, color = FileVariable)) +
-    geom_line() +
-    scale_x_reverse() +
-    coord_flip() +
-    facet_wrap( ~ Variable, scales = "free") +
-    ggtitle("Multi-File Variable Plot") +
-    xlab("Depth(m)") +
-    theme_minimal() +
+    geom_line() + # Geom Line
+    coord_flip() + # Rotate the plot to have X axis Vertical
+    scale_x_reverse() + # Reverse the x axis to have 0 at top
+    facet_wrap( ~ Variable, scales = "free") + # Each Variable gets its own plot
+    # ggtitle("Multi-File Variable Plot") + # Title for the Plot
+    xlab("Depth(m)") + # X axis Label
+    theme_minimal() + # Theme of plot
+    scale_color_uchicago() + # Color Palet
     theme(legend.title = element_blank(),
-          legend.position = "bottom")+
-    scale_color_uchicago()
-}, width = "auto", height = 1080)
+          legend.position = "bottom") # Legend
+}, 
+width = "auto", # Plot width
+height = 1080) # Plot height
 ```
