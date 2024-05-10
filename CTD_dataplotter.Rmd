@@ -71,7 +71,8 @@ shiny::renderPlot({
   
   # Create the plot with ggplot, using `FileVariable` for color grouping
   ggplot(long_data, aes(x = DepSM, y = Value, color = FileVariable)) +
-    geom_line() + # Geom Line
+   # geom_line() + # Geom Line
+    geom_smooth(se = FALSE, method = "gam")+ #gome Smooth with Gam method.
     coord_flip() + # Rotate the plot to have X axis Vertical
     scale_x_reverse() + # Reverse the x axis to have 0 at top
     facet_wrap( ~ Variable, scales = "free") + # Each Variable gets its own plot
