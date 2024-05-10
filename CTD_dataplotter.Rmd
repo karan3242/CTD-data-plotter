@@ -24,36 +24,44 @@ file_names <- tools::file_path_sans_ext(basename(xlsx_files))
 var <- c("Sal00", "Tv290C", "FlSP", "SeaTurbMtr", "Par", "Sbeox0Mm/L", "Sbeox0PS")
 ```
 
-
-
 ```{r echo=FALSE}
 # Shiny controls for file and variable selection
 # Select files and variables for the plot
-shiny::fluidPage(
-  shiny::selectInput("fileSelect", "Select file:", choices = file_names, multiple = TRUE),
-  shiny::checkboxGroupInput("varSelect", "Select variables:", choices = var, inline = TRUE)
+fluidPage(
+  selectInput(
+    "fileSelect",
+    "Select file:",
+    choices = file_names,
+    multiple = TRUE
+  ),
+  checkboxGroupInput(
+    "varSelect",
+    "Select variables:",
+    choices = var,
+    inline = TRUE
+  )
 )
 ```
 
 ```{r echo=FALSE}
 # Shiny server logic for generating the plot
-shiny::renderPlot({
+renderPlot({
   # Ensure selections are made
   req(input$fileSelect, input$varSelect)
   
   # Read and combine data from selected files, adding a "File" column
-  combined_data <- bind_rows(
-    lapply(input$fileSelect, function(file) {
-      path <- file.path(data_folder, paste0(file, ".xlsx"))
-      read_excel(path) %>% 
-        drop_na() %>% 
-        mutate(File = file)  # Add a column for the source file
-    })
-  )
+  combined_data <- bind_rows(lapply(input$fileSelect, function(file) {
+    path <- file.path(data_folder, paste0(file, ".xlsx"))
+    read_excel(path) %>%
+      drop_na() %>%
+      mutate(File = file)  # Add a column for the source file
+  }))
   
   # Reshape data to long format for multi-variable plotting
   long_data <- combined_data %>%
-    pivot_longer(cols = input$varSelect, names_to = "Variable", values_to = "Value")
+    pivot_longer(cols = input$varSelect,
+                 names_to = "Variable",
+                 values_to = "Value")
   
   # Create a unique identifier for color grouping using both File and Variable
   long_data <- long_data %>%
@@ -64,21 +72,10 @@ shiny::renderPlot({
     geom_line() +
     scale_x_reverse() +
     coord_flip() +
+    facet_wrap( ~ Variable, scales = "free") +
     ggtitle("Multi-File Variable Plot") +
-    xlab("Depth") +
+    xlab("Depth(m)") +
     theme_minimal() +
     theme(legend.title = element_blank())
 }, width = "auto", height = 1080)
-
-
 ```
-
-```{r eval=FALSE, include=FALSE}
-# Combine the Shiny UI and server to create a Shiny interactive document
-shinyApp(
-  ui = shiny_ui,
-  server = shiny_server
-)
-
-```
-
