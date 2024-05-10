@@ -5,6 +5,7 @@ runtime: shiny
 ---
 
 ```{r setup, echo=FALSE}
+knitr::opts_chunk$set(include = FALSE)
 library(shiny)
 library(ggplot2)
 library(readxl)
@@ -27,14 +28,14 @@ var <- c("Sal00", "Tv290C", "FlSP", "SeaTurbMtr", "Par", "Sbeox0Mm/L", "Sbeox0PS
 ```{r echo=FALSE}
 # Shiny controls for file and variable selection
 # Select files and variables for the plot
-fluidPage(
+shiny::fluidPage(
   selectInput(
     "fileSelect",
     "Select file:",
     choices = file_names,
     multiple = TRUE
   ),
-  checkboxGroupInput(
+  shiny::checkboxGroupInput(
     "varSelect",
     "Select variables:",
     choices = var,
@@ -45,7 +46,7 @@ fluidPage(
 
 ```{r echo=FALSE}
 # Shiny server logic for generating the plot
-renderPlot({
+shiny::renderPlot({
   # Ensure selections are made
   req(input$fileSelect, input$varSelect)
   
