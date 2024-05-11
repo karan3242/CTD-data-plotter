@@ -43,6 +43,7 @@ shiny::fluidPage(
     inline = TRUE,
     selected = "FlSP"
   ),
+  tags$div(style = "display: flex; flex-direction: row;",
   shiny::checkboxInput(
     "lineToggle",
     "Show Line",
@@ -52,8 +53,13 @@ shiny::fluidPage(
     "showSmooth",
     "Show Avrage",
     value = TRUE  # Default to showing geom_smooth()
+  ),
+  shiny::checkboxInput(
+    "showse",
+    "Show Standard Error",
+    value = TRUE  # Default to showing Se
   )
-)
+))
 ```
 
 ```{r}
@@ -96,7 +102,7 @@ shiny::renderPlot({
     plot <- plot + geom_line() # Add geom_line if checkbox is checked
   }
   if (input$showSmooth){
-  plot <- plot + geom_smooth(se = FALSE, method = "gam") # Add geom_smooth if checkbox is checked
+  plot <- plot + geom_smooth(se = input$showse, method = "gam") # Add geom_smooth if checkbox is checked
   }
   
   plot
