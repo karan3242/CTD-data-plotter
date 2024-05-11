@@ -131,7 +131,7 @@ shiny::fluidPage(
   height = 1080)
   
   observeEvent(input$savePlot, {
-    ggsave("plot.png", plot(), width = 10, height = 7, units = "in", dpi = 300)
+    ggsave(paste0(input$path,"/plot.png"), plot(), width = 7, height = 14, units = "in", dpi = 300)
   })
   
   output$plot <- shiny::renderPlot({
