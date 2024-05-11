@@ -60,8 +60,11 @@ shiny::fluidPage(
     "showse",
     "Show Standard Error",
     value = TRUE  # Default to showing Se
+  ),
+  actionButton("savePlot", "Save Plot")
   )
-))
+)
+
 
 ```
 
@@ -76,7 +79,7 @@ shiny::fluidPage(
   })
   
   # Render plot
-  shiny::renderPlot({
+  plot <- shiny::reactive({
     # Ensure selections are made
     req(input$fileSelect, input$varSelect)
     
@@ -99,30 +102,40 @@ shiny::fluidPage(
       mutate(FileVariable = paste(File, Variable, sep = " - "))
     
     # Create the plot with ggplot, using `FileVariable` for color grouping
- plot <-  ggplot(long_data, aes(x = DepSM, y = Value, color = FileVariable)) +
-    coord_flip() + # Rotate the plot to have X axis Vertical
-    scale_x_reverse() + # Reverse the x axis to have 0 at top
-    facet_wrap( ~ Variable, scales = "free") + # Each Variable gets its own plot
-    # ggtitle("Multi-File Variable Plot") + # Title for the Plot
-    xlab("Depth(m)") + # X axis Label
-    theme_minimal() + # Theme of plot
-    scale_color_uchicago() + # Color Palet
-    theme(legend.title = element_blank(),
-          legend.position = "bottom") # Legend
- 
-  # Conditional rendering of geom_line and geom_smooth based on checkbox
-  if (input$lineToggle) {
-    plot <- plot + geom_line() # Add geom_line if checkbox is checked
-  }
-  if (input$showSmooth){
-  plot <- plot + geom_smooth(se = input$showse, method = "gam") # Add geom_smooth if checkbox is checked
-  }
+    plot <-  ggplot(long_data, aes(x = DepSM, y = Value, color = FileVariable)) +
+      coord_flip() + # Rotate the plot to have X axis Vertical
+      scale_x_reverse() + # Reverse the x axis to have 0 at top
+      facet_wrap( ~ Variable, scales = "free") + # Each Variable gets its own plot
+      # ggtitle("Multi-File Variable Plot") + # Title for the Plot
+      xlab("Depth(m)") + # X axis Label
+      theme_minimal() + # Theme of plot
+      scale_color_uchicago() + # Color Palet
+      theme(legend.title = element_blank(),
+            legend.position = "bottom") # Legend
+    
+    # Conditional rendering of geom_line and geom_smooth based on checkbox
+    if (input$lineToggle) {
+      plot <- plot + geom_line() # Add geom_line if checkbox is checked
+    }
+    if (input$showSmooth){
+      plot <- plot + geom_smooth(se = input$showse, method = "gam") # Add geom_smooth if checkbox is checked
+    }
+    
+    return(plot)
+  })
   
-  plot
+  shiny::renderPlot({
+    plot()
+  },
+  width = "auto",
+  height = 1080)
   
-}, 
-width = "auto", # Plot width
-height = 1080) # Plot height
-
+  observeEvent(input$savePlot, {
+    ggsave("plot.png", plot(), width = 10, height = 7, units = "in", dpi = 300)
+  })
+  
+  output$plot <- shiny::renderPlot({
+    plot()
+  })
 
 ```
