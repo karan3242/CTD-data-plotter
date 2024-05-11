@@ -4,6 +4,12 @@ output: html_document
 runtime: shiny
 ---
 
+---
+title: "Water column Data"
+output: html_document
+runtime: shiny
+---
+
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(shiny)
@@ -13,15 +19,6 @@ library(dplyr)
 library(tidyverse)
 library(ggsci)
 
-# Define the directory where your Excel files are stored
-data_folder <- "data"
-
-# List all .xlsx files in the data folder
-xlsx_files <- list.files(path = data_folder, pattern = "\\.xlsx$", full.names = TRUE)
-
-# Extract file names without extension
-file_names <- tools::file_path_sans_ext(basename(xlsx_files))
-
 # Variable options for the plot
 var <- c("Sal00", "Tv290C", "FlSP", "SeaTurbMtr", "Par", "Sbeox0Mm/L", "Sbeox0PS", "AltM", "Flag")
 ```
@@ -30,10 +27,15 @@ var <- c("Sal00", "Tv290C", "FlSP", "SeaTurbMtr", "Par", "Sbeox0Mm/L", "Sbeox0PS
 # Shiny controls for file and variable selection
 # Select files and variables for the plot
 shiny::fluidPage(
+  textInput(
+    "path",
+    "Select Folder:",
+    NULL, placeholder = "Absolute path of the folder"
+  ),
   selectInput(
     "fileSelect",
     "Select file:",
-    choices = file_names,
+    choices = NULL,
     multiple = TRUE
   ),
   shiny::checkboxGroupInput(
@@ -60,32 +62,43 @@ shiny::fluidPage(
     value = TRUE  # Default to showing Se
   )
 ))
+
 ```
 
 ```{r}
-shiny::renderPlot({
-  # Ensure selections are made
-  req(input$fileSelect, input$varSelect)
+  observe({
+    if (!is.null(input$path)) {
+      data_folder <- input$path
+      xlsx_files <- list.files(path = data_folder, pattern = "\\.xlsx$", full.names = TRUE)
+      file_names <- tools::file_path_sans_ext(basename(xlsx_files))
+      updateSelectInput(session, "fileSelect", choices = file_names)
+    }
+  })
   
-  # Read and combine data from selected files, adding a "File" column
-  combined_data <- bind_rows(lapply(input$fileSelect, function(file) {
-    path <- file.path(data_folder, paste0(file, ".xlsx"))
-    read_excel(path) %>%
-      drop_na() %>% # removes NA row if any
-      mutate(File = file)  # Add a column for the source file
-  }))
-  
-  # Reshape data to long format for multi-variable plotting
-  long_data <- combined_data %>%
-    pivot_longer(cols = input$varSelect,
-                 names_to = "Variable",
-                 values_to = "Value")
-  
-  # Create a unique identifier for color grouping using both File and Variable
-  long_data <- long_data %>%
-    mutate(FileVariable = paste(File, Variable, sep = " - "))
-  
-  # Create the plot with ggplot, using `FileVariable` for color grouping
+  # Render plot
+  shiny::renderPlot({
+    # Ensure selections are made
+    req(input$fileSelect, input$varSelect)
+    
+    # Read and combine data from selected files, adding a "File" column
+    combined_data <- bind_rows(lapply(input$fileSelect, function(file) {
+      path <- file.path(input$path, paste0(file, ".xlsx"))
+      read_excel(path) %>%
+        drop_na() %>% # removes NA row if any
+        mutate(File = file)  # Add a column for the source file
+    }))
+    
+    # Reshape data to long format for multi-variable plotting
+    long_data <- combined_data %>%
+      pivot_longer(cols = input$varSelect,
+                   names_to = "Variable",
+                   values_to = "Value")
+    
+    # Create a unique identifier for color grouping using both File and Variable
+    long_data <- long_data %>%
+      mutate(FileVariable = paste(File, Variable, sep = " - "))
+    
+    # Create the plot with ggplot, using `FileVariable` for color grouping
  plot <-  ggplot(long_data, aes(x = DepSM, y = Value, color = FileVariable)) +
     coord_flip() + # Rotate the plot to have X axis Vertical
     scale_x_reverse() + # Reverse the x axis to have 0 at top
@@ -110,4 +123,6 @@ shiny::renderPlot({
 }, 
 width = "auto", # Plot width
 height = 1080) # Plot height
+
+
 ```
