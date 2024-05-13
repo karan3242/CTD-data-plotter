@@ -28,12 +28,12 @@ In your shell terminal clone the repo to your machine and open it as a project i
 git clone https://github.com/karan3242/CTD-data-plotter.git
 ```
 
-## Run using Shell
+# Run using Shell
 
 Navigate to the cloned folder and run the script.
 
 ``` sh
-Rscript ctd_plotter_app.R
+Rscript ctd_plotter.R
 ```
 
 Click on the `Listening on` link.
