@@ -51,10 +51,19 @@ ui <- fluidPage(
     shiny::checkboxInput("lineToggle", "Show Line", value = FALSE),
     shiny::checkboxInput("showSmooth", "Show Average", value = TRUE),
     # Corrected a typo here
-    shiny::checkboxInput("showse", "Show Standard Error", value = TRUE),
-    actionButton("savePlot", "Save Plot")
+    shiny::checkboxInput("showse", "Show Standard Error", value = TRUE)
   ),
-  plotOutput("plot") # Added plotOutput for rendering the plot
+  plotOutput("plot", width = "auto", height = 1000), # Added plotOutput for rendering the plot
+  tags$div(style = "display: flex; flex-direction: column;",
+           tags$div(style = "display: flex; flex-direction: row;",
+                    textInput("dpi", "Select dpi:", 300, placeholder = "300"),
+                    textInput("pwidth", "Select dpi:", 7, placeholder = "7"),
+                    textInput("pheight", "Select dpi:", 14, placeholder = "14")),
+           tags$div(style = "display: flex; flex-direction: row;",
+                    textInput("dstpath", "Select Destination Folder:", "~/Pictures", placeholder = "~/Pictures"),
+                    textInput("dstplot", "Select File name:", "plot", placeholder = "plot"),
+                    actionButton("savePlot", "Save Plot")))
+  
 )
 
 # Define server logic required to draw a histogram
@@ -125,12 +134,12 @@ server <- function(input, output, session) {
   
   observeEvent(input$savePlot, {
     ggsave(
-      paste0(input$path, "/plot.png"),
+      paste0(input$dstpath, "/",input$dstplot,".png"),
       plot(),
-      width = 7,
-      height = 14,
+      width = as.integer(input$pwidth),
+      height = as.integer(input$pheight),
       units = "in",
-      dpi = 300
+      dpi = as.integer(input$dpi)
     )
   })
 }

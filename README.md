@@ -40,6 +40,8 @@ Click on the `Listening on` link.
 
 # Run using RStudio
 
+Open Rstudio and run `ctd_plotter.R`
+
 # Use
 
 - Add the path to your desired folder.
