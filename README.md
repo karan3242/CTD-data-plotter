@@ -6,8 +6,17 @@ There should only be one sheet per .xlsx file. (`CSV support coming soon`)
 
 # Requierments
 
-Latest Version of **R** and **Shiny**
+## Software tools
 
+Latest Version of [R](https://www.r-project.org) and [shiny](https://shiny.posit.co), and a Browser.
+
+In your R session run the following code to download shiny.
+
+``` r
+install.packages("shiny")
+```
+
+## Variables
 Each file should have the following variables.
 
 -   **DepSM**: Depth in Meters.
@@ -24,7 +33,7 @@ Each file should have the following variables.
 
 In your shell terminal clone the repo to your machine and open it as a project in R studio.
 
-``` sh
+```
 git clone https://github.com/karan3242/CTD-data-plotter.git
 ```
 
@@ -32,7 +41,7 @@ git clone https://github.com/karan3242/CTD-data-plotter.git
 
 Navigate to the cloned folder and run the script.
 
-``` sh
+```
 Rscript CTD-data-plotter/ctd_plotter.R
 ```
 
