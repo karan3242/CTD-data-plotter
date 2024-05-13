@@ -1,11 +1,4 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
+# Load all Libraries
 
 library(shiny)
 library(ggplot2)
@@ -13,6 +6,9 @@ library(readxl)
 library(dplyr)
 library(tidyverse)
 library(ggsci)
+
+# Varaibales provided in the .xlsx file.
+# Change thses if you want to creat vertical charts for other variables.
 
 var <- c(
   "Sal00",
@@ -30,6 +26,7 @@ var <- c(
 ui <- fluidPage(
   # Application title
   titlePanel("CTD Data Plotter"),
+  # Variable selection
   tags$div(
     style = "display: flex; flex-direction: row;",
   textInput("path", "Select Folder:", NULL, placeholder = "Absolute path of the folder"),
@@ -53,7 +50,9 @@ ui <- fluidPage(
     # Corrected a typo here
     shiny::checkboxInput("showse", "Show Standard Error", value = TRUE)
   ),
-  plotOutput("plot", width = "auto", height = 1000), # Added plotOutput for rendering the plot
+ # Added plotOutput for rendering the plot
+  plotOutput("plot", width = "auto", height = 1000),
+# File saving Parameters.
   tags$div(style = "display: flex; flex-direction: column;",
            tags$div(style = "display: flex; flex-direction: row;",
                     textInput("dpi", "Select dpi:", 300, placeholder = "300"),
@@ -63,13 +62,13 @@ ui <- fluidPage(
                     textInput("dstpath", "Select Destination Folder:", "~/Pictures", placeholder = "~/Pictures"),
                     textInput("dstplot", "Select File name:", "plot", placeholder = "plot"),
                     actionButton("savePlot", "Save Plot")))
-  
+
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
   # Added session argument
-  
+
   observe({
     if (!is.null(input$path)) {
       data_folder <- input$path
@@ -80,12 +79,12 @@ server <- function(input, output, session) {
       updateSelectInput(session, "fileSelect", choices = file_names)
     }
   })
-  
+
   # Render plot
   plot <- shiny::reactive({
     # Ensure selections are made
     req(input$fileSelect, input$varSelect)
-    
+
     # Read and combine data from selected files, adding a "File" column
     combined_data <- bind_rows(lapply(input$fileSelect, function(file) {
       path <- file.path(input$path, paste0(file, ".xlsx"))
@@ -93,7 +92,7 @@ server <- function(input, output, session) {
         drop_na() %>% # removes NA row if any
         mutate(File = file)  # Add a column for the source file
     }))
-    
+
     # Reshape data to long format for multi-variable plotting
     long_data <- combined_data %>%
       pivot_longer(
@@ -101,11 +100,11 @@ server <- function(input, output, session) {
         names_to = "Variable",
         values_to = "Value"
       )
-    
+
     # Create a unique identifier for color grouping using both File and Variable
     long_data <- long_data %>%
       mutate(FileVariable = paste(File, Variable, sep = " - "))
-    
+
     # Create the plot with ggplot, using `FileVariable` for color grouping
     plot <-  ggplot(long_data, aes(x = DepSM, y = Value, color = FileVariable)) +
       coord_flip() + # Rotate the plot to have X axis Vertical
@@ -116,7 +115,7 @@ server <- function(input, output, session) {
       theme_minimal() + # Theme of plot
       scale_color_uchicago() + # Color Palette
       theme(legend.title = element_blank(), legend.position = "bottom") # Legend
-    
+
     # Conditional rendering of geom_line and geom_smooth based on checkbox
     if (input$lineToggle) {
       plot <- plot + geom_line() # Add geom_line if checkbox is checked
@@ -124,14 +123,18 @@ server <- function(input, output, session) {
     if (input$showSmooth) {
       plot <- plot + geom_smooth(se = input$showse, method = "gam") # Add geom_smooth if checkbox is checked
     }
-    
+
     return(plot)
   })
-  
+
+  # Render the plot
+
   output$plot <- renderPlot({
-    plot() # Render the plot
+    plot()
   })
-  
+
+  # parameters for saving the plot.
+
   observeEvent(input$savePlot, {
     ggsave(
       paste0(input$dstpath, "/",input$dstplot,".png"),
