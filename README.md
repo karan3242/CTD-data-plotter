@@ -49,6 +49,7 @@ Click on the `Listening on` link.
 - Provide the destination folder and file name
 - Save the plot.
 
+
 > The averaged line used geom_smooth with "gam" method.
 
 > Plots will be saved as `.png`.
