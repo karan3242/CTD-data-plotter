@@ -36,7 +36,7 @@ Navigate to the cloned folder and run the script.
 Rscript CTD-data-plotter/ctd_plotter.R
 ```
 
-Click on the `Listening on` link.
+Click on the `Listening on` link or past it in your browser's url bar to open the app.
 
 # Run using RStudio
 
