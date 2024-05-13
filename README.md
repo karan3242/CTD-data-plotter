@@ -33,7 +33,7 @@ git clone https://github.com/karan3242/CTD-data-plotter.git
 Navigate to the cloned folder and run the script.
 
 ``` sh
-Rscript ctd_plotter.R
+Rscript CTD-data-plotter/ctd_plotter.R
 ```
 
 Click on the `Listening on` link.
