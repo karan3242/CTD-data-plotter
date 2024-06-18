@@ -1,5 +1,4 @@
 # Load all Libraries
-
 library(shiny)
 library(ggplot2)
 library(readxl)
@@ -7,9 +6,7 @@ library(dplyr)
 library(tidyverse)
 library(ggsci)
 
-# Varaibales provided in the .xlsx file.
-# Change thses if you want to creat vertical charts for other variables.
-
+# Variables provided in the .xlsx file.
 var <- c(
   "Sal00",
   "Tv290C",
@@ -24,18 +21,20 @@ var <- c(
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-  # Application title
   titlePanel("CTD Data Plotter"),
+  
   # Variable selection
   tags$div(
     style = "display: flex; flex-direction: row;",
-  textInput("path", "Select Folder:", NULL, placeholder = "Absolute path of the folder"),
-  selectInput(
-    "fileSelect",
-    "Select file:",
-    choices = NULL,
-    multiple = TRUE
-  )),
+    textInput("path", "Select Folder:", NULL, placeholder = "Absolute path of the folder"),
+    selectInput(
+      "fileSelect",
+      "Select file:",
+      choices = NULL,
+      multiple = TRUE
+    )
+  ),
+  
   shiny::checkboxGroupInput(
     "varSelect",
     "Select variables:",
@@ -43,102 +42,129 @@ ui <- fluidPage(
     inline = TRUE,
     selected = "FlSP"
   ),
+  
+  # Dynamic range inputs
+  uiOutput("rangeInputs"),
+  
   tags$div(
     style = "display: flex; flex-direction: row;",
     shiny::checkboxInput("lineToggle", "Show Line", value = FALSE),
     shiny::checkboxInput("showSmooth", "Show Average", value = TRUE),
-    # Corrected a typo here
     shiny::checkboxInput("showse", "Show Standard Error", value = TRUE)
   ),
- # Added plotOutput for rendering the plot
+  
+  # Added plotOutput for rendering the plot
   plotOutput("plot", width = "auto", height = 1000),
-# File saving Parameters.
-  tags$div(style = "display: flex; flex-direction: column;",
-           tags$div(style = "display: flex; flex-direction: row;",
-                    textInput("dpi", "Select dpi:", 300, placeholder = "300"),
-                    textInput("pwidth", "Select Width:", 7, placeholder = "7"),
-                    textInput("pheight", "Select Height:", 14, placeholder = "14")),
-           tags$div(style = "display: flex; flex-direction: row;",
-                    textInput("dstpath", "Select Destination Folder:", "~/Pictures", placeholder = "~/Pictures"),
-                    textInput("dstplot", "Select File name:", "plot", placeholder = "plot"),
-                    actionButton("savePlot", "Save Plot")))
-
+  
+  # File saving Parameters
+  tags$div(
+    style = "display: flex; flex-direction: column;",
+    tags$div(
+      style = "display: flex; flex-direction: row;",
+      textInput("dpi", "Select dpi:", 300, placeholder = "300"),
+      textInput("pwidth", "Select Width:", 7, placeholder = "7"),
+      textInput("pheight", "Select Height:", 14, placeholder = "14")
+    ),
+    tags$div(
+      style = "display: flex; flex-direction: row;",
+      textInput("dstpath", "Select Destination Folder:", "~/Pictures", placeholder = "~/Pictures"),
+      textInput("dstplot", "Select File name:", "plot", placeholder = "plot"),
+      actionButton("savePlot", "Save Plot")
+    )
+  )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-  # Added session argument
-
+  
+  # Observe path input and update file selection
   observe({
-    if (!is.null(input$path)) {
-      data_folder <- input$path
-      xlsx_files <- list.files(path = data_folder,
-                               pattern = "\\.xlsx$",
-                               full.names = TRUE)
+    req(input$path)
+    data_folder <- input$path
+    if (dir.exists(data_folder)) {
+      xlsx_files <- list.files(path = data_folder, pattern = "\\.xlsx$", full.names = TRUE)
       file_names <- tools::file_path_sans_ext(basename(xlsx_files))
       updateSelectInput(session, "fileSelect", choices = file_names)
+    } else {
+      updateSelectInput(session, "fileSelect", choices = NULL)
     }
   })
-
-  # Render plot
-  plot <- shiny::reactive({
-    # Ensure selections are made
+  
+  # Reactive data for selected files and variables
+  combined_data <- reactive({
     req(input$fileSelect, input$varSelect)
-
-    # Read and combine data from selected files, adding a "File" column
-    combined_data <- bind_rows(lapply(input$fileSelect, function(file) {
+    bind_rows(lapply(input$fileSelect, function(file) {
       path <- file.path(input$path, paste0(file, ".xlsx"))
       read_excel(path) %>%
-        drop_na() %>% # removes NA row if any
-        mutate(File = file)  # Add a column for the source file
+        drop_na() %>%
+        mutate(File = file)
     }))
-
-    # Reshape data to long format for multi-variable plotting
-    long_data <- combined_data %>%
-      pivot_longer(
-        cols = input$varSelect,
-        names_to = "Variable",
-        values_to = "Value"
+  })
+  
+  # Dynamic range inputs based on selected variables
+  output$rangeInputs <- renderUI({
+    req(combined_data())
+    data <- combined_data()
+    
+    lapply(input$varSelect, function(var) {
+      min_val <- min(data[[var]], na.rm = TRUE)
+      max_val <- max(data[[var]], na.rm = TRUE)
+      sliderInput(
+        inputId = paste0("range_", var),
+        label = paste("Range for", var),
+        min = min_val,
+        max = max_val,
+        value = c(min_val, max_val)
       )
-
-    # Create a unique identifier for color grouping using both File and Variable
-    long_data <- long_data %>%
+    })
+  })
+  
+  # Reactive plot generation
+  plot <- reactive({
+    req(input$fileSelect, input$varSelect)
+    
+    data <- combined_data()
+    
+    long_data <- data %>%
+      pivot_longer(cols = input$varSelect, names_to = "Variable", values_to = "Value") %>%
       mutate(FileVariable = paste(File, Variable, sep = " - "))
-
-    # Create the plot with ggplot, using `FileVariable` for color grouping
-    plot <-  ggplot(long_data, aes(x = DepSM, y = Value, color = FileVariable)) +
-      coord_flip() + # Rotate the plot to have X axis Vertical
-      scale_x_reverse() + # Reverse the x axis to have 0 at top
-      facet_wrap(~ Variable, scales = "free") + # Each Variable gets its own plot
-      # ggtitle("Multi-File Variable Plot") + # Title for the Plot
-      xlab("Depth(m)") + # X axis Label
-      theme_minimal() + # Theme of plot
-      scale_color_uchicago() + # Color Palette
-      theme(legend.title = element_blank(), legend.position = "bottom") # Legend
-
-    # Conditional rendering of geom_line and geom_smooth based on checkbox
+    
+    # Filter data based on user-defined ranges
+    for (var in input$varSelect) {
+      range <- input[[paste0("range_", var)]]
+      long_data <- long_data %>%
+        filter(Variable != var | (Value >= range[1] & Value <= range[2]))
+    }
+    
+    plot <- ggplot(long_data, aes(x = DepSM, y = Value, color = FileVariable)) +
+      coord_flip() +
+      scale_x_reverse() +
+      facet_wrap(~ Variable, scales = "free") +
+      xlab("Depth(m)") +
+      theme_minimal() +
+      scale_color_uchicago() +
+      theme(legend.title = element_blank(), legend.position = "bottom")
+    
     if (input$lineToggle) {
-      plot <- plot + geom_line() # Add geom_line if checkbox is checked
+      plot <- plot + geom_line()
     }
     if (input$showSmooth) {
-      plot <- plot + geom_smooth(se = input$showse, method = "gam") # Add geom_smooth if checkbox is checked
+      plot <- plot + geom_smooth(se = input$showse, method = "gam")
     }
-
-    return(plot)
+    
+    plot
   })
-
+  
   # Render the plot
-
   output$plot <- renderPlot({
     plot()
   })
-
-  # parameters for saving the plot.
-
+  
+  # Save plot to file
   observeEvent(input$savePlot, {
     ggsave(
-      paste0(input$dstpath, "/",input$dstplot,".png"),
-      plot(),
+      filename = file.path(input$dstpath, paste0(input$dstplot, ".png")),
+      plot = plot(),
       width = as.integer(input$pwidth),
       height = as.integer(input$pheight),
       units = "in",
